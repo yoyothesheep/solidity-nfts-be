@@ -16,15 +16,18 @@ contract GroupNFT is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    // Our base SVG code, just the words will change
-    string startSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
+    // Our base SVG code, the words & background color will change
+    string startSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='";
+    string svgColorPart = "'/><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
     string endSvg = "</text></svg>";
 
     string[] firstWords = ["Flip", "Himbo", "Zero Days", "Cup", "Vaccine", "Meow"];
     string[] secondWords = ["JORTS", "JEAN", "Margarine", "Sweet", "Accident", "Closet"];
     string[] thirdWords = ["Open", "Door", "Potato", "Help", "Trapped", "Friendly"];
 
-    event MintedGroupNFT(address sender, uint256 tokenId);
+    string[] backgroundColors = ["red", "#08C2A8", "yellow", "blue", "green"];
+
+    event NewGroupNFTMinted(address sender, uint256 tokenId);
 
     constructor() ERC721 ("GroupNFT1", "IGOTCHU"){
         console.log("created the token");
@@ -41,9 +44,13 @@ contract GroupNFT is ERC721URIStorage {
         string memory third = getRandThirdWord(newItemID);
         string memory combinedWord = string(abi.encodePacked(first, second, third));
 
-        // concat
-        string memory finalSvg = string(abi.encodePacked(startSvg, combinedWord, endSvg));
+        // generate background color
+        string memory randomColor = pickRandomColor(newItemID);
 
+        // concat
+        string memory finalSvg = string(abi.encodePacked(startSvg, randomColor, svgColorPart, combinedWord, endSvg));
+
+        // json representation of NFT containing the SVG
         string memory json = Base64.encode(
             bytes(
                 string(
@@ -85,7 +92,7 @@ contract GroupNFT is ERC721URIStorage {
         _tokenIds.increment();
 
         console.log("An NFT w/ ID %s has been minted for %s", newItemID, msg.sender);
-        emit MintedGroupNFT(msg.sender, newItemID);
+        emit NewGroupNFTMinted(msg.sender, newItemID);
     }
 
     function getRandFirstWord(uint256 tokenId) public view returns (string memory){
@@ -100,15 +107,21 @@ contract GroupNFT is ERC721URIStorage {
     }
 
     function getRandSecondWord(uint256 tokenId) public view returns (string memory){
-        uint256 randSecondIndex = random(string(abi.encodePacked("FIRST_WORD", Strings.toString(tokenId))));
+        uint256 randSecondIndex = random(string(abi.encodePacked("SECOND_WORD", Strings.toString(tokenId))));
         randSecondIndex = randSecondIndex % firstWords.length;
         return secondWords[randSecondIndex];
     }
 
     function getRandThirdWord(uint256 tokenId) public view returns (string memory){
-        uint256 randThirdIndex = random(string(abi.encodePacked("FIRST_WORD", Strings.toString(tokenId))));
+        uint256 randThirdIndex = random(string(abi.encodePacked("THIRD_WORD", Strings.toString(tokenId))));
         randThirdIndex = randThirdIndex % firstWords.length;
         return thirdWords[randThirdIndex];
+    }
+
+    function pickRandomColor(uint256 tokenId) public view returns (string memory) {
+    uint256 rand = random(string(abi.encodePacked("COLOR", Strings.toString(tokenId))));
+    rand = rand % backgroundColors.length;
+    return backgroundColors[rand];
     }
 
   function random(string memory input) internal pure returns (uint256) {
